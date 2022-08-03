@@ -1,0 +1,44 @@
+version: "3.9"
+services:
+  db:
+    image: postgres
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: password
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.3.3
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+  web:
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - REDIS_HOST=redis
+    volumes:
+      - .:/myapp
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - elasticsearch
+      - redis
+    links:
+      - db
+      - elasticsearch
+      - redis
+volumes:
+  elasticsearch: {}
+  redis: {}
